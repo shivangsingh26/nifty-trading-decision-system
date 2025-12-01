@@ -55,6 +55,23 @@ python train_production.py
 python predict.py --data nifty_data.csv --confidence 0.60
 ```
 
+### 🌐 Web Dashboard (Streamlit App)
+
+```bash
+# Launch the interactive web dashboard
+streamlit run streamlit_app.py
+
+# The app will open in your browser at http://localhost:8501
+```
+
+**Dashboard Features**:
+- 📊 Interactive charts with buy/sell signals
+- 📈 Real-time PnL visualization
+- 📋 Filterable predictions table
+- 🎯 Model performance metrics
+- 💾 Download predictions as CSV
+- 📱 Modern, responsive UI
+
 ---
 
 ## 📁 Project Structure
@@ -80,6 +97,7 @@ nifty-trading-decision-system/
 ├── main.py                # Baseline training
 ├── train_production.py    # Production training ⭐
 ├── predict.py             # Production predictions ⭐
+├── streamlit_app.py       # Web dashboard 🌐
 ├── requirements.txt       # Dependencies
 ├── README.md             # This file
 └── APPROACH.md           # Technical documentation
