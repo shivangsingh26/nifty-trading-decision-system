@@ -4,15 +4,12 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
-venv/
-.venv/
-ENV/
 
-# Virtual environments
-*.egg-info/
-dist/
-build/
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
 
 # IDE
 .vscode/
@@ -20,19 +17,33 @@ build/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
-Thumbs.db
 
-# Jupyter Notebook
+# Jupyter
 .ipynb_checkpoints
 
-# Data files (optional - uncomment if you don't want to commit large CSV)
-# nifty_data.csv
+# Models (large files)
+models/*.pkl
+models/*.h5
+models/*.joblib
 
-# Model files (optional - keep commented to include trained model)
-# models/*.pkl
+# Generated outputs (keep structure, ignore content)
+output/*.png
 
-# Outputs (optional - keep commented to include predictions)
-# output/*.csv
+# Logs
+*.log
+logs/
+
+# CatBoost
+catboost_info/
+
+# Claude Code
+.claude/
+
+# OS
+Thumbs.db
+
+# Temp
+*.tmp
+*.bak
+temp/

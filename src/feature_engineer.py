@@ -162,6 +162,79 @@ class FeatureEngineer:
         self.feature_columns.extend(['hour', 'minute', 'is_opening_hour',
                                      'is_closing_hour', 'is_lunch_hour'])
 
+    def create_bollinger_bands(self, window=20, num_std=2):
+        """
+        Create Bollinger Bands
+        """
+        print(f"Creating Bollinger Bands ({window}-period, {num_std} std)...")
+
+        sma = self.df['close'].rolling(window=window).mean()
+        std = self.df['close'].rolling(window=window).std()
+
+        self.df['bb_upper'] = sma + (std * num_std)
+        self.df['bb_lower'] = sma - (std * num_std)
+        self.df['bb_middle'] = sma
+
+        # Bollinger Band Width (volatility indicator)
+        self.df['bb_width'] = (self.df['bb_upper'] - self.df['bb_lower']) / self.df['bb_middle']
+
+        # Price position relative to bands (0 = at lower band, 1 = at upper band)
+        bb_range = self.df['bb_upper'] - self.df['bb_lower']
+        bb_range = bb_range.replace(0, 0.0001)
+        self.df['bb_position'] = (self.df['close'] - self.df['bb_lower']) / bb_range
+
+        self.feature_columns.extend(['bb_upper', 'bb_lower', 'bb_middle', 'bb_width', 'bb_position'])
+
+    def create_atr(self, period=14):
+        """
+        Create Average True Range (ATR) - volatility indicator
+        """
+        print(f"Creating ATR ({period}-period)...")
+
+        high_low = self.df['high'] - self.df['low']
+        high_close = np.abs(self.df['high'] - self.df['close'].shift(1))
+        low_close = np.abs(self.df['low'] - self.df['close'].shift(1))
+
+        true_range = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+        self.df['atr'] = true_range.rolling(window=period).mean()
+
+        # ATR as percentage of price
+        self.df['atr_pct'] = (self.df['atr'] / self.df['close']) * 100
+
+        self.feature_columns.extend(['atr', 'atr_pct'])
+
+    def create_stochastic(self, k_period=14, d_period=3):
+        """
+        Create Stochastic Oscillator
+        """
+        print(f"Creating Stochastic Oscillator (K={k_period}, D={d_period})...")
+
+        low_min = self.df['low'].rolling(window=k_period).min()
+        high_max = self.df['high'].rolling(window=k_period).max()
+
+        high_low_diff = high_max - low_min
+        high_low_diff = high_low_diff.replace(0, 0.0001)
+
+        self.df['stoch_k'] = 100 * ((self.df['close'] - low_min) / high_low_diff)
+        self.df['stoch_d'] = self.df['stoch_k'].rolling(window=d_period).mean()
+
+        # Stochastic signals
+        self.df['stoch_oversold'] = (self.df['stoch_k'] < 20).astype(int)
+        self.df['stoch_overbought'] = (self.df['stoch_k'] > 80).astype(int)
+
+        self.feature_columns.extend(['stoch_k', 'stoch_d', 'stoch_oversold', 'stoch_overbought'])
+
+    def create_roc(self, period=12):
+        """
+        Create Rate of Change (ROC) - momentum indicator
+        """
+        print(f"Creating ROC ({period}-period)...")
+
+        self.df['roc'] = ((self.df['close'] - self.df['close'].shift(period)) /
+                          self.df['close'].shift(period)) * 100
+
+        self.feature_columns.append('roc')
+
     def create_advanced_features(self):
         """
         Create advanced features with higher predictive power:
@@ -199,10 +272,21 @@ class FeatureEngineer:
         self.df['rsi_oversold'] = (self.df['rsi'] < 30).astype(int)
         self.df['rsi_overbought'] = (self.df['rsi'] > 70).astype(int)
 
+        # G. EMA features
+        self.df['ema_12'] = self.df['close'].ewm(span=12, adjust=False).mean()
+        self.df['ema_26'] = self.df['close'].ewm(span=26, adjust=False).mean()
+        self.df['ema_50'] = self.df['close'].ewm(span=50, adjust=False).mean()
+
+        # Distance from EMAs
+        self.df['dist_from_ema_12'] = (self.df['close'] - self.df['ema_12']) / self.df['ema_12']
+        self.df['dist_from_ema_26'] = (self.df['close'] - self.df['ema_26']) / self.df['ema_26']
+        self.df['dist_from_ema_50'] = (self.df['close'] - self.df['ema_50']) / self.df['ema_50']
+
         self.feature_columns.extend([
             'momentum_strength', 'intraday_strength', 'price_position',
             'return_3min', 'return_5min', 'return_10min', 'vol_expansion',
-            'sma_5_10_cross', 'sma_10_20_cross', 'rsi_oversold', 'rsi_overbought'
+            'sma_5_10_cross', 'sma_10_20_cross', 'rsi_oversold', 'rsi_overbought',
+            'ema_12', 'ema_26', 'ema_50', 'dist_from_ema_12', 'dist_from_ema_26', 'dist_from_ema_50'
         ])
 
     def create_all_features(self):
@@ -225,7 +309,11 @@ class FeatureEngineer:
         self.create_volatility_features()
         self.create_lag_features()
         self.create_time_features()
-        self.create_advanced_features()  # NEW: Advanced high-impact features
+        self.create_bollinger_bands()  # NEW: Bollinger Bands
+        self.create_atr()              # NEW: ATR
+        self.create_stochastic()       # NEW: Stochastic Oscillator
+        self.create_roc()              # NEW: Rate of Change
+        self.create_advanced_features()  # Advanced high-impact features
 
         # Remove rows with NaN values (caused by rolling calculations)
         initial_count = len(self.df)

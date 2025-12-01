@@ -9,7 +9,9 @@
       "Bash(tree:*)",
       "Bash(python -c:*)",
       "Bash(python3:*)",
-      "Bash(source .venv/bin/activate)"
+      "Bash(source .venv/bin/activate)",
+      "Bash(cat:*)",
+      "Bash(pdftotext:*)"
     ],
     "deny": [],
     "ask": []
