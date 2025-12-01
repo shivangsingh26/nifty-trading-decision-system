@@ -8,7 +8,9 @@ import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.preprocessing import StandardScaler
 import lightgbm as lgb
+import xgboost as xgb
 import pickle
 import os
 
@@ -36,12 +38,13 @@ class ModelTrainer:
         self.models = {}
         self.results = {}
 
-    def train_logistic_regression(self, params):
+    def train_logistic_regression(self, params, use_scaling=True):
         """
-        Train Logistic Regression model
+        Train Logistic Regression model with optional feature scaling
 
         Args:
             params (dict): Model parameters
+            use_scaling (bool): Whether to scale features (recommended for LR)
 
         Returns:
             LogisticRegression: Trained model
@@ -50,11 +53,23 @@ class ModelTrainer:
         print("Training Logistic Regression...")
         print("-"*60)
 
+        if use_scaling:
+            print("Scaling features for Logistic Regression...")
+            scaler = StandardScaler()
+            X_train_scaled = scaler.fit_transform(self.X_train)
+            X_test_scaled = scaler.transform(self.X_test)
+        else:
+            X_train_scaled = self.X_train
+            X_test_scaled = self.X_test
+
         model = LogisticRegression(**params)
-        model.fit(self.X_train, self.y_train)
+        model.fit(X_train_scaled, self.y_train)
+
+        # Store scaler for predictions
+        self.scaler = scaler if use_scaling else None
 
         # Predictions
-        y_pred = model.predict(self.X_test)
+        y_pred = model.predict(X_test_scaled)
 
         # Calculate metrics
         accuracy = accuracy_score(self.y_test, y_pred)
@@ -162,6 +177,48 @@ class ModelTrainer:
 
         return model
 
+    def train_xgboost(self, params):
+        """
+        Train XGBoost model
+
+        Args:
+            params (dict): Model parameters
+
+        Returns:
+            xgb.XGBClassifier: Trained model
+        """
+        print("\n" + "-"*60)
+        print("Training XGBoost...")
+        print("-"*60)
+
+        model = xgb.XGBClassifier(**params)
+        model.fit(self.X_train, self.y_train)
+
+        # Predictions
+        y_pred = model.predict(self.X_test)
+
+        # Calculate metrics
+        accuracy = accuracy_score(self.y_test, y_pred)
+        precision = precision_score(self.y_test, y_pred, zero_division=0, average='weighted')
+        recall = recall_score(self.y_test, y_pred, zero_division=0, average='weighted')
+        f1 = f1_score(self.y_test, y_pred, zero_division=0, average='weighted')
+
+        self.models['xgboost'] = model
+        self.results['xgboost'] = {
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1': f1,
+            'predictions': y_pred
+        }
+
+        print(f"Accuracy:  {accuracy:.4f}")
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall:    {recall:.4f}")
+        print(f"F1-Score:  {f1:.4f}")
+
+        return model
+
     def compare_models(self):
         """
         Compare all trained models and select the best one
@@ -229,7 +286,7 @@ class ModelTrainer:
         Returns:
             pd.DataFrame: Feature importance dataframe
         """
-        if model_name in ['random_forest', 'lightgbm']:
+        if model_name in ['random_forest', 'lightgbm', 'xgboost']:
             importances = model.feature_importances_
             importance_df = pd.DataFrame({
                 'feature': feature_names,

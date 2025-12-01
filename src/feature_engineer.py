@@ -147,13 +147,63 @@ class FeatureEngineer:
         Extract time-based features from timestamp:
         - Hour of day
         - Minute of hour
+        - Hour-specific flags (opening, closing, lunch)
         """
         print("Creating time-based features...")
 
         self.df['hour'] = self.df['timestamp'].dt.hour
         self.df['minute'] = self.df['timestamp'].dt.minute
 
-        self.feature_columns.extend(['hour', 'minute'])
+        # Hour-specific patterns (critical for intraday!)
+        self.df['is_opening_hour'] = (self.df['hour'] == 9).astype(int)
+        self.df['is_closing_hour'] = (self.df['hour'] == 15).astype(int)
+        self.df['is_lunch_hour'] = ((self.df['hour'] >= 12) & (self.df['hour'] <= 13)).astype(int)
+
+        self.feature_columns.extend(['hour', 'minute', 'is_opening_hour',
+                                     'is_closing_hour', 'is_lunch_hour'])
+
+    def create_advanced_features(self):
+        """
+        Create advanced features with higher predictive power:
+        - Momentum strength (not just direction)
+        - Multi-timeframe returns
+        - Price position in range
+        - Volatility expansion/contraction
+        """
+        print("Creating advanced features...")
+
+        # A. Momentum strength (absolute value matters!)
+        self.df['momentum_strength'] = self.df['prev_return'].abs()
+        self.df['intraday_strength'] = self.df['intraday_return'].abs()
+
+        # B. Price position in candle range (0 = at low, 1 = at high)
+        range_diff = self.df['high'] - self.df['low']
+        range_diff = range_diff.replace(0, 0.0001)  # Avoid division by zero
+        self.df['price_position'] = (self.df['close'] - self.df['low']) / range_diff
+
+        # C. Multi-timeframe returns (capture broader context)
+        self.df['return_3min'] = self.df['close'].pct_change(3) * 100
+        self.df['return_5min'] = self.df['close'].pct_change(5) * 100
+        self.df['return_10min'] = self.df['close'].pct_change(10) * 100
+
+        # D. Volatility expansion/contraction
+        hl_range_prev = self.df['hl_range'].shift(1)
+        hl_range_prev = hl_range_prev.replace(0, 0.0001)  # Avoid division by zero
+        self.df['vol_expansion'] = self.df['hl_range'] / hl_range_prev
+
+        # E. Moving average crossovers
+        self.df['sma_5_10_cross'] = self.df['sma_5'] - self.df['sma_10']
+        self.df['sma_10_20_cross'] = self.df['sma_10'] - self.df['sma_20']
+
+        # F. RSI zones
+        self.df['rsi_oversold'] = (self.df['rsi'] < 30).astype(int)
+        self.df['rsi_overbought'] = (self.df['rsi'] > 70).astype(int)
+
+        self.feature_columns.extend([
+            'momentum_strength', 'intraday_strength', 'price_position',
+            'return_3min', 'return_5min', 'return_10min', 'vol_expansion',
+            'sma_5_10_cross', 'sma_10_20_cross', 'rsi_oversold', 'rsi_overbought'
+        ])
 
     def create_all_features(self):
         """
@@ -175,6 +225,7 @@ class FeatureEngineer:
         self.create_volatility_features()
         self.create_lag_features()
         self.create_time_features()
+        self.create_advanced_features()  # NEW: Advanced high-impact features
 
         # Remove rows with NaN values (caused by rolling calculations)
         initial_count = len(self.df)

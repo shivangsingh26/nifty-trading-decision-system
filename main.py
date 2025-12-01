@@ -29,7 +29,7 @@ def parse_arguments():
     parser.add_argument(
         '--model',
         type=str,
-        choices=['all', 'logistic_regression', 'random_forest', 'lightgbm'],
+        choices=['all', 'logistic_regression', 'random_forest', 'lightgbm', 'xgboost'],
         default='all',
         help='Model to train (default: all)'
     )
@@ -52,7 +52,15 @@ def main():
     print("STEP 1: DATA LOADING & PREPROCESSING")
     print("-"*60)
     data_loader = DataLoader(config.DATA_PATH)
-    df = data_loader.get_processed_data()
+    # Load, preprocess, and create target with noise filtering
+    data_loader.load_data()
+    data_loader.preprocess()
+    df = data_loader.create_target(
+        min_movement_pct=config.MIN_MOVEMENT_PCT,
+        use_multiclass=config.USE_MULTICLASS,
+        up_threshold=config.UP_THRESHOLD,
+        down_threshold=config.DOWN_THRESHOLD
+    )
 
     # Step 2: Feature Engineering
     feature_engineer = FeatureEngineer(
@@ -96,13 +104,16 @@ def main():
 
     # Train selected models
     if args.model == 'all' or args.model == 'logistic_regression':
-        trainer.train_logistic_regression(config.LR_PARAMS)
+        trainer.train_logistic_regression(config.LR_PARAMS, use_scaling=False)  # Disable scaling for now
 
     if args.model == 'all' or args.model == 'random_forest':
         trainer.train_random_forest(config.RF_PARAMS)
 
     if args.model == 'all' or args.model == 'lightgbm':
         trainer.train_lightgbm(config.LGBM_PARAMS)
+
+    if args.model == 'all' or args.model == 'xgboost':
+        trainer.train_xgboost(config.XGB_PARAMS)
 
     # Step 5: Model Comparison and Selection
     best_model_name, best_model, comparison_df = trainer.compare_models()

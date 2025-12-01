@@ -5,37 +5,38 @@ NIFTY PRICE PREDICTION - MODEL EVALUATION REPORT
 MODEL COMPARISON
 ------------------------------------------------------------
               Model  Accuracy  Precision   Recall  F1-Score
-           Lightgbm  0.508846   0.505461 0.575646  0.538276
-      Random Forest  0.508292   0.505916 0.484261  0.494852
-Logistic Regression  0.508021   0.503994 0.680101  0.578952
+      Random Forest  0.534884   0.552435 0.406284  0.468220
+           Lightgbm  0.521262   0.532095 0.415293  0.466494
+            Xgboost  0.520155   0.521481 0.520155  0.516787
+Logistic Regression  0.504430   0.542793 0.105911  0.177238
 
-BEST MODEL: Lightgbm
+BEST MODEL: Random Forest
 ------------------------------------------------------------
-Accuracy:  0.5088 (50.88%)
-Precision: 0.5055 (50.55%)
-Recall:    0.5756 (57.56%)
-F1-Score:  0.5383
+Accuracy:  0.5349 (53.49%)
+Precision: 0.5524 (55.24%)
+Recall:    0.4063 (40.63%)
+F1-Score:  0.4682
 
 Confusion Matrix:
                  Predicted
                  0      1
-Actual  0     21296  26803
-        1     20195  27395
+Actual  0      2981   1498
+        1      2702   1849
 
 Detailed Classification Report:
               precision    recall  f1-score   support
 
-    Down (0)       0.51      0.44      0.48     48099
-      Up (1)       0.51      0.58      0.54     47590
+    Down (0)       0.52      0.67      0.59      4479
+      Up (1)       0.55      0.41      0.47      4551
 
-    accuracy                           0.51     95689
-   macro avg       0.51      0.51      0.51     95689
-weighted avg       0.51      0.51      0.51     95689
+    accuracy                           0.53      9030
+   macro avg       0.54      0.54      0.53      9030
+weighted avg       0.54      0.53      0.53      9030
 
 PnL SUMMARY
 ------------------------------------------------------------
-Final PnL:   -314,553,590.95
-Max PnL:     96,798.55
-Min PnL:     -314,953,132.45
+Final PnL:   57,027,538.40
+Max PnL:     57,027,538.40
+Min PnL:     -475,310.05
 
 ============================================================
