@@ -29,7 +29,7 @@ def parse_arguments():
     parser.add_argument(
         '--model',
         type=str,
-        choices=['all', 'logistic_regression', 'random_forest', 'lightgbm', 'xgboost'],
+        choices=['all', 'logistic_regression', 'random_forest', 'lightgbm', 'xgboost', 'lstm'],
         default='all',
         help='Model to train (default: all)'
     )
@@ -100,7 +100,7 @@ def main():
     print("MODEL TRAINING")
     print("="*60)
 
-    trainer = ModelTrainer(X_train, X_test, y_train, y_test, config.MODELS_DIR)
+    trainer = ModelTrainer(X_train, X_test, y_train, y_test, config.MODELS_DIR, test_df)
 
     # Train selected models
     if args.model == 'all' or args.model == 'logistic_regression':
@@ -114,6 +114,17 @@ def main():
 
     if args.model == 'all' or args.model == 'xgboost':
         trainer.train_xgboost(config.XGB_PARAMS)
+
+    if args.model == 'all' or args.model == 'lstm':
+        trainer.train_lstm()
+
+    # Step 4.5: Save predictions for all trained models
+    print("\n" + "="*60)
+    print("SAVING MODEL-SPECIFIC PREDICTIONS")
+    print("="*60)
+    for model_name in trainer.models.keys():
+        trainer.save_model_predictions(model_name, config.OUTPUT_DIR)
+    print("="*60)
 
     # Step 5: Model Comparison and Selection
     best_model_name, best_model, comparison_df = trainer.compare_models()

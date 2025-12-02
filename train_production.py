@@ -629,6 +629,52 @@ def main():
 
     print(f"Results saved to: {output_file}\n")
 
+    # ============================================================
+    # SAVE BEST MODEL
+    # ============================================================
+    print(f"\n{'='*70}")
+    print("SAVING BEST MODEL")
+    print('='*70)
+
+    # Train the best model on full data and save it
+    # Based on results, calibrated models performed best
+    print(f"\nRetraining best model (Calibrated Random Forest) on full training data...")
+
+    best_model = RandomForestClassifier(
+        n_estimators=200,
+        max_depth=15,
+        min_samples_split=10,
+        min_samples_leaf=5,
+        random_state=42,
+        n_jobs=-1
+    )
+
+    # Apply probability calibration
+    calibrated_model = CalibratedClassifierCV(best_model, cv=3, method='sigmoid')
+    calibrated_model.fit(X_train, y_train)
+
+    # Test accuracy
+    y_pred_final = calibrated_model.predict(X_test)
+    final_accuracy = accuracy_score(y_test, y_pred_final)
+
+    print(f"Final model accuracy on test set: {final_accuracy:.4f} ({final_accuracy*100:.2f}%)")
+
+    # Save model
+    import joblib
+    import os
+    os.makedirs(config.MODELS_DIR, exist_ok=True)
+
+    model_path = os.path.join(config.MODELS_DIR, 'production_model.pkl')
+    joblib.dump(calibrated_model, model_path)
+
+    print(f"✅ Model saved to: {model_path}")
+    print(f"   Model type: Calibrated Random Forest")
+    print(f"   Features used: Top 20 selected features")
+    print(f"   Test accuracy: {final_accuracy:.4f}")
+    print('='*70 + "\n")
+
+    return calibrated_model, top_features
+
 
 if __name__ == "__main__":
     main()

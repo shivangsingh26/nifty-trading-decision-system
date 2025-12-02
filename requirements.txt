@@ -19,3 +19,7 @@ streamlit>=1.28.0
 plotly>=5.17.0
 matplotlib>=3.5.0
 seaborn>=0.12.0
+
+# Deep Learning (LSTM)
+tensorflow>=2.13.0
+keras>=2.13.0

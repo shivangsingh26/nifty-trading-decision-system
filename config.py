@@ -38,7 +38,7 @@ VOLATILITY_WINDOW = 5  # Rolling volatility window
 LAG_PERIODS = 3  # Number of lag features
 
 # Model parameters
-MODELS_TO_TRAIN = ['logistic_regression', 'random_forest', 'lightgbm', 'xgboost']
+MODELS_TO_TRAIN = ['logistic_regression', 'random_forest', 'lightgbm', 'xgboost', 'lstm']
 
 # Logistic Regression parameters (improved with better solver)
 LR_PARAMS = {

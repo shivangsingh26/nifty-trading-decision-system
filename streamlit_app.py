@@ -83,10 +83,31 @@ def load_model(model_path):
         return None
 
 @st.cache_data
-def load_predictions():
-    """Load existing predictions"""
+def get_available_prediction_files():
+    """Get list of available prediction files"""
+    pred_files = {}
+    output_dir = 'output'
+
+    if not os.path.exists(output_dir):
+        return pred_files
+
+    # Check for model-specific predictions
+    for file in os.listdir(output_dir):
+        if file.startswith('predictions_') and file.endswith('.csv'):
+            model_name = file.replace('predictions_', '').replace('.csv', '')
+            display_name = model_name.replace('_', ' ').title()
+            pred_files[display_name] = os.path.join(output_dir, file)
+
+    # Check for final predictions (best model)
+    if os.path.exists('output/final_predictions.csv'):
+        pred_files['Best Model'] = 'output/final_predictions.csv'
+
+    return pred_files
+
+@st.cache_data
+def load_predictions(pred_path='output/final_predictions.csv'):
+    """Load predictions from specified file"""
     try:
-        pred_path = 'output/final_predictions.csv'
         if os.path.exists(pred_path):
             df = pd.read_csv(pred_path)
             df['Timestamp'] = pd.to_datetime(df['Timestamp'])
@@ -291,6 +312,25 @@ def main():
 
         st.markdown("---")
 
+        # Prediction file selection
+        st.markdown("### 📊 Predictions")
+        available_predictions = get_available_prediction_files()
+
+        if available_predictions:
+            selected_pred_name = st.selectbox(
+                "Select Predictions",
+                options=list(available_predictions.keys()),
+                index=0 if 'Best Model' in available_predictions else 0
+            )
+            selected_pred_path = available_predictions[selected_pred_name]
+            st.info(f"**{selected_pred_name}**")
+        else:
+            st.warning("⚠️ No predictions found")
+            st.info("Run `python main.py` to generate predictions")
+            selected_pred_path = None
+
+        st.markdown("---")
+
         # Options
         st.markdown("### ⚙️ Options")
         show_raw_data = st.checkbox("Show Raw Data", value=False)
@@ -317,10 +357,14 @@ def main():
         """)
 
     # Load data
-    df = load_predictions()
+    if selected_pred_path:
+        df = load_predictions(selected_pred_path)
+    else:
+        df = None
 
     if df is None or df.empty:
         st.error("❌ No predictions found. Please run `python main.py` first to generate predictions.")
+        st.info("💡 This will train all models and save predictions for each model")
         st.stop()
 
     # Filter by date range
